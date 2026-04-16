@@ -7,10 +7,34 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #fff;
+      --text: #1a1a1a;
+      --placeholder: #999;
+      --hover: #333;
+      --drop-hover: #f5f5f5;
+      --drop-sep: #eee;
+      --divider: #555;
+      --muted: #999;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111;
+        --text: #e5e5e5;
+        --placeholder: #666;
+        --hover: #ccc;
+        --drop-hover: #222;
+        --drop-sep: #333;
+        --divider: #999;
+        --muted: #666;
+      }
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #fff;
-      color: #1a1a1a;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100dvh;
       display: flex;
       justify-content: center;
@@ -31,21 +55,6 @@
       margin-bottom: 1.5rem;
     }
 
-    input {
-      display: block;
-      width: 100%;
-      height: 48px;
-      padding: 0 16px;
-      border: 2px solid #1a1a1a;
-      border-radius: 8px;
-      font-size: 15px;
-      color: #1a1a1a;
-      background: #fff;
-      outline: none;
-    }
-
-    input::placeholder { color: #999; }
-
     .sr-only {
       position: absolute;
       width: 1px;
@@ -57,20 +66,35 @@
       border: 0;
     }
 
-    /* Actions — hidden until valid link */
+    input {
+      display: block;
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border: 2px solid var(--text);
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+    }
+
+    input::placeholder { color: var(--placeholder); }
+
+    /* Show actions only when input has a valid URL */
     .actions {
       display: none;
       margin-top: 12px;
       position: relative;
     }
 
-    .actions.visible { display: flex; }
+    .page:has(input:valid) .actions { display: flex; }
 
     .btn-open {
       flex: 1;
       height: 44px;
-      background: #1a1a1a;
-      color: #fff;
+      background: var(--text);
+      color: var(--bg);
       border: none;
       border-radius: 8px 0 0 8px;
       font-size: 15px;
@@ -78,46 +102,44 @@
       cursor: pointer;
     }
 
-    .btn-open:hover { background: #333; }
+    .btn-open:hover { background: var(--hover); }
 
-    .btn-drop {
+    /* Dropdown via <details> */
+    details {
+      position: relative;
+    }
+
+    details summary {
       width: 40px;
       height: 44px;
-      background: #1a1a1a;
-      color: #fff;
-      border: none;
-      border-left: 1px solid #555;
+      background: var(--text);
+      color: var(--bg);
+      border-left: 1px solid var(--divider);
       border-radius: 0 8px 8px 0;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .btn-drop:hover { background: #333; }
-
-    .btn-drop span {
+      list-style: none;
       font-size: 10px;
-      line-height: 1;
     }
 
-    /* Dropdown */
-    .dropdown {
-      display: none;
+    details summary::-webkit-details-marker { display: none; }
+    details summary:hover { background: var(--hover); }
+
+    details .dropdown {
       position: absolute;
       top: calc(100% + 4px);
-      left: 0;
       right: 0;
-      background: #fff;
-      border: 2px solid #1a1a1a;
+      left: -440px;
+      background: var(--bg);
+      border: 2px solid var(--text);
       border-radius: 8px;
       overflow: hidden;
       z-index: 10;
     }
 
-    .dropdown.open { display: block; }
-
-    .dropdown button {
+    details .dropdown button {
       display: block;
       width: 100%;
       padding: 11px 16px;
@@ -125,107 +147,59 @@
       border: none;
       text-align: left;
       font-size: 14px;
-      color: #1a1a1a;
+      color: var(--text);
       cursor: pointer;
     }
 
-    .dropdown button:hover { background: #f5f5f5; }
-    .dropdown button + button { border-top: 1px solid #eee; }
+    details .dropdown button:hover { background: var(--drop-hover); }
+    details .dropdown button + button { border-top: 1px solid var(--drop-sep); }
 
+    .credit {
+      position: fixed;
+      bottom: 1rem;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .credit a { color: var(--muted); text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="page">
     <h1>X2Nitter</h1>
     <label for="input" class="sr-only">Twitter or X link</label>
-    <input type="url" id="input" placeholder="Paste a twitter.com or x.com link" autocomplete="off" spellcheck="false">
+    <input type="url" id="input" required
+           pattern="https?://(www\.|mobile\.)?(twitter\.com|x\.com)/.+"
+           placeholder="Paste a twitter.com or x.com link"
+           autocomplete="off" spellcheck="false">
 
-    <div class="actions" id="actions">
-      <button class="btn-open" id="btn-open">Open on nitter.net</button>
-      <button class="btn-drop" id="btn-drop" aria-label="More instances" aria-expanded="false" aria-controls="dropdown"><span>&#9660;</span></button>
-      <div class="dropdown" id="dropdown" role="menu"></div>
+    <div class="actions">
+      <button class="btn-open" onclick="openOn('nitter.net')">Open on nitter.net</button>
+      <details>
+        <summary aria-label="More instances">&#9660;</summary>
+        <div class="dropdown">
+          <button onclick="openOn('nitter.net')">Open on nitter.net</button>
+          <button onclick="openOn('xcancel.com')">Open on xcancel.com</button>
+          <button onclick="openOn('nitter.poast.org')">Open on nitter.poast.org</button>
+          <button onclick="openOn('nitter.privacydev.net')">Open on nitter.privacydev.net</button>
+          <button onclick="openOn('nitter.1d4.us')">Open on nitter.1d4.us</button>
+          <button onclick="openOn('nitter.woodland.cafe')">Open on nitter.woodland.cafe</button>
+        </div>
+      </details>
     </div>
-
   </div>
 
-  <div style="position:fixed;bottom:1rem;left:0;right:0;text-align:center;font-size:13px;color:#bbb;">
-    <a href="https://github.com/nschumac" style="color:#999;text-decoration:none;">@nschumac</a>
+  <div class="credit">
+    <a href="https://github.com/nschumac">@nschumac</a>
   </div>
 
   <script>
-    const INSTANCES = [
-      'nitter.net',
-      'xcancel.com',
-      'nitter.poast.org',
-      'nitter.privacydev.net',
-      'nitter.1d4.us',
-      'nitter.woodland.cafe',
-    ];
-
-    const TWITTER_RE = /^https?:\/\/(www\.|mobile\.)?(twitter\.com|x\.com)\/.+/i;
-
-    const $input   = document.getElementById('input');
-    const $actions = document.getElementById('actions');
-    const $btnOpen = document.getElementById('btn-open');
-    const $btnDrop = document.getElementById('btn-drop');
-    const $dropdown = document.getElementById('dropdown');
-
-    // Build dropdown
-    INSTANCES.forEach(inst => {
-      const btn = document.createElement('button');
-      btn.setAttribute('role', 'menuitem');
-      btn.textContent = 'Open on ' + inst;
-      btn.addEventListener('click', () => {
-        closeDropdown();
-        openOn(inst);
-      });
-      $dropdown.appendChild(btn);
-    });
-
-    // Show/hide button based on input
-    function checkInput() {
-      const val = $input.value.trim();
-      if (TWITTER_RE.test(val)) {
-        $actions.classList.add('visible');
-      } else {
-        $actions.classList.remove('visible');
-        closeDropdown();
-      }
-    }
-
-    $input.addEventListener('input', checkInput);
-    $input.addEventListener('paste', () => setTimeout(checkInput, 0));
-
-    // Open on default instance
-    $btnOpen.addEventListener('click', () => openOn(INSTANCES[0]));
-
-    // Enter key
-    $input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && $actions.classList.contains('visible')) {
-        openOn(INSTANCES[0]);
-      }
-    });
-
-    // Dropdown toggle
-    $btnDrop.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = $dropdown.classList.toggle('open');
-      $btnDrop.setAttribute('aria-expanded', open);
-    });
-
-    document.addEventListener('click', closeDropdown);
-
-    function closeDropdown() {
-      $dropdown.classList.remove('open');
-      $btnDrop.setAttribute('aria-expanded', 'false');
-    }
-
     function openOn(instance) {
-      const url = new URL($input.value.trim());
-      window.open(`https://${instance}${url.pathname}${url.search}${url.hash}`, '_blank', 'noopener');
+      var url = new URL(document.getElementById('input').value.trim());
+      window.open('https://' + instance + url.pathname + url.search + url.hash, '_blank', 'noopener');
     }
-
-    $input.focus();
   </script>
 </body>
 </html>
